@@ -340,7 +340,7 @@ button:focus-visible {
 }
 
 .calendar-grid {
-  min-width: 920px;
+  min-width: 560px;
   display: grid;
   grid-template-columns: 112px repeat(6, minmax(118px, 1fr));
   background: var(--line);
@@ -351,6 +351,11 @@ button:focus-visible {
   min-height: 70px;
   background: var(--surface);
   padding: 9px;
+}
+
+.error-cell {
+  grid-column: 1 / -1;
+  color: #ffb4b4;
 }
 
 .calendar-head {
@@ -367,6 +372,16 @@ button:focus-visible {
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 800;
+}
+
+.time-cell strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+
+.time-cell span {
+  display: block;
 }
 
 .slot-button {

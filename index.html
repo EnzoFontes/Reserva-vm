@@ -21,8 +21,8 @@
 
         <form class="auth-form" id="authForm" autocomplete="on">
           <label>
-            Usuário
-            <input id="usernameInput" name="username" type="text" minlength="3" maxlength="24" autocomplete="username" required />
+            Email
+            <input id="emailInput" name="email" type="email" autocomplete="email" required />
           </label>
 
           <label>
@@ -63,7 +63,7 @@
             <button class="icon-button" id="nextDayButton" type="button" aria-label="Próximo dia">&gt;</button>
             <button class="secondary-action" id="todayButton" type="button">Hoje</button>
           </div>
-          <button class="primary-action compact" id="newReservationButton" type="button">Reservar VM</button>
+          <button class="primary-action compact" id="newReservationButton" type="button">Reservar</button>
         </div>
 
         <div class="week-strip" id="weekStrip" aria-label="Visão da semana"></div>
@@ -80,11 +80,6 @@
           <p class="eyebrow">Nova reserva</p>
           <h2 id="dialogTitle">Reservar VM</h2>
         </header>
-
-        <label>
-          Máquina virtual
-          <select id="vmSelect" required></select>
-        </label>
 
         <label>
           Início
@@ -114,6 +109,8 @@
       </form>
     </dialog>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
