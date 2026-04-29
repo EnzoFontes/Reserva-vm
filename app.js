@@ -9,7 +9,7 @@ const authMessage = document.querySelector("#authMessage");
 const authSubmit = document.querySelector("#authSubmit");
 const signInTab = document.querySelector("#signInTab");
 const createAccountTab = document.querySelector("#createAccountTab");
-const emailInput = document.querySelector("#emailInput");
+const usernameInput = document.querySelector("#usernameInput");
 const passwordInput = document.querySelector("#passwordInput");
 const signedInUser = document.querySelector("#signedInUser");
 const logoutButton = document.querySelector("#logoutButton");
@@ -34,6 +34,18 @@ let activeUser = null;
 let supabaseClient = null;
 let reservationsChannel = null;
 let reservationDate = null;
+
+function cleanUsername(username) {
+  return username.trim().toLowerCase();
+}
+
+function usernameToAuthEmail(username) {
+  return `${cleanUsername(username)}@reserva.local`;
+}
+
+function emailToUsername(email) {
+  return email?.replace(/@reserva\.local$/i, "") ?? "Usuário";
+}
 
 function formatDateKey(date) {
   const year = date.getFullYear();
@@ -93,7 +105,7 @@ function showMessage(element, message, isSuccess = false) {
 }
 
 function getDisplayName(user) {
-  return user?.email?.split("@")[0] ?? "Usuário";
+  return emailToUsername(user?.email);
 }
 
 function showAuthScreen(message) {
@@ -115,11 +127,12 @@ async function handleAuthSubmit(event) {
     return;
   }
 
-  const email = emailInput.value.trim().toLowerCase();
+  const username = cleanUsername(usernameInput.value);
+  const email = usernameToAuthEmail(username);
   const password = passwordInput.value;
 
-  if (!emailInput.checkValidity()) {
-    showMessage(authMessage, "Digite um email válido.");
+  if (!/^[a-z0-9_.-]{3,24}$/.test(username)) {
+    showMessage(authMessage, "Use 3 a 24 letras, números, pontos, traços ou underscores.");
     return;
   }
 
@@ -141,7 +154,7 @@ async function handleAuthSubmit(event) {
       }
 
       if (!data.session) {
-        showMessage(authMessage, "Conta criada. Confirme seu email antes de entrar.", true);
+        showMessage(authMessage, "Conta criada. Aguarde a liberação antes de entrar.", true);
         setAuthMode("signin");
         return;
       }
@@ -166,7 +179,7 @@ async function handleAuthSubmit(event) {
 
 async function startSession(user) {
   activeUser = user;
-  emailInput.value = "";
+  usernameInput.value = "";
   passwordInput.value = "";
   await renderApp();
 }
@@ -316,7 +329,7 @@ function createSlotCell(dateKey, hour, reservation) {
     button.addEventListener("click", () => openReservationDialog(dateKey, hour));
   } else {
     const isOwn = reservation.user_id === activeUser.id;
-    const displayUser = reservation.user_email?.split("@")[0] ?? "usuário";
+    const displayUser = emailToUsername(reservation.user_email);
     button.classList.add("is-booked");
     button.classList.toggle("is-own", isOwn);
     button.replaceChildren();

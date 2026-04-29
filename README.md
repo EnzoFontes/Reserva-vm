@@ -4,11 +4,11 @@ A small static web app for reserving virtual machines from `08:00` to `20:00`.
 
 ## Use
 
-Open `index.html` in a browser, create an account with email and password, then reserve available VM slots on the calendar.
+Open `index.html` in a browser, create an account with username and password, then reserve available VM slots on the calendar.
 
 ## Features
 
-- Account creation and sign-in with Supabase Auth
+- Account creation and sign-in with username/password using Supabase Auth internally
 - Shared Supabase database so all users see the same reservations
 - Weekly calendar from `08:00-09:00` through `19:00-20:00`
 - One shared VM, shown by weekday columns instead of VM columns
