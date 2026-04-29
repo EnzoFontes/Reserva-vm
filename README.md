@@ -10,8 +10,9 @@ Open `index.html` in a browser, create an account with username and password, th
 
 - Account creation and sign-in with username/password using Supabase Auth internally
 - Shared Supabase database so all users see the same reservations
-- Weekly calendar from `08:00-09:00` through `19:00-20:00`
-- One shared VM, shown by weekday columns instead of VM columns
+- Day calendar from `08:00-09:00` through `19:00-20:00`
+- Weekday selector above the calendar; the reservation list only shows the selected day
+- Current day is calculated in GMT-3 and updates automatically after midnight
 - Reserve one hour, multiple hours, or the whole day from `08:00` to `20:00`
 - Prevents double-booking any time slot in the selected range
 - Prevents one user from reserving more than once in the same hour

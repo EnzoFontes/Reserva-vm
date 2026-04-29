@@ -34,6 +34,8 @@ let activeUser = null;
 let supabaseClient = null;
 let reservationsChannel = null;
 let reservationDate = null;
+let currentGmtMinus3DateKey = null;
+let gmtMinus3Timer = null;
 
 function cleanUsername(username) {
   return username.trim().toLowerCase();
@@ -52,6 +54,12 @@ function formatDateKey(date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function getGmtMinus3DateKey() {
+  const now = new Date();
+  const gmtMinus3Time = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  return gmtMinus3Time.toISOString().slice(0, 10);
 }
 
 function parseDateKey(dateKey) {
@@ -249,7 +257,7 @@ async function renderApp() {
   signedInUser.textContent = getDisplayName(activeUser);
 
   if (!dateInput.value) {
-    dateInput.value = formatDateKey(new Date());
+    dateInput.value = getGmtMinus3DateKey();
   }
 
   renderWeekStrip();
@@ -294,15 +302,11 @@ function renderWeekStrip() {
   });
 }
 
-async function fetchWeekReservations() {
-  const weekDates = getWeekDates();
-  const firstDay = weekDates[0].dateKey;
-  const lastDay = weekDates[6].dateKey;
+async function fetchSelectedDayReservations() {
   const { data, error } = await supabaseClient
     .from("reservations")
     .select("id,reservation_group_id,vm,date,hour,user_id,user_email,note,created_at")
-    .gte("date", firstDay)
-    .lte("date", lastDay)
+    .eq("date", dateInput.value)
     .order("hour", { ascending: true });
 
   if (error) {
@@ -313,14 +317,13 @@ async function fetchWeekReservations() {
 }
 
 async function renderCalendar() {
-  const weekDates = getWeekDates();
   calendarGrid.style.gridTemplateColumns = "220px minmax(240px, 1fr)";
   calendarGrid.replaceChildren();
   calendarGrid.append(createHeaderCell("Carregando..."));
 
-  let weekReservations = [];
+  let dayReservations = [];
   try {
-    weekReservations = await fetchWeekReservations();
+    dayReservations = await fetchSelectedDayReservations();
   } catch (error) {
     calendarGrid.replaceChildren();
     calendarGrid.append(createErrorCell(error.message));
@@ -328,23 +331,17 @@ async function renderCalendar() {
   }
 
   calendarGrid.replaceChildren();
-  calendarGrid.append(createHeaderCell("Dia / Horário"));
+  calendarGrid.append(createHeaderCell("Horário"));
   calendarGrid.append(createHeaderCell("Reserva"));
 
-  weekDates.forEach(({ dateKey, label }) => {
-    HOURS.forEach((hour) => {
-      const timeCell = document.createElement("div");
-      timeCell.className = "calendar-cell time-cell";
-      const dayLabel = document.createElement("strong");
-      dayLabel.textContent = label;
-      const timeLabel = document.createElement("span");
-      timeLabel.textContent = formatSlotRange(hour);
-      timeCell.append(dayLabel, timeLabel);
-      calendarGrid.append(timeCell);
+  HOURS.forEach((hour) => {
+    const timeCell = document.createElement("div");
+    timeCell.className = "calendar-cell time-cell";
+    timeCell.textContent = formatSlotRange(hour);
+    calendarGrid.append(timeCell);
 
-      const reservation = weekReservations.find((item) => item.hour === hour && item.date === dateKey);
-      calendarGrid.append(createSlotCell(dateKey, hour, reservation));
-    });
+    const reservation = dayReservations.find((item) => item.hour === hour);
+    calendarGrid.append(createSlotCell(dateInput.value, hour, reservation));
   });
 }
 
@@ -551,6 +548,30 @@ async function shiftSelectedDate(days) {
   await renderApp();
 }
 
+async function syncSelectedDateToGmtMinus3Today() {
+  const nextDateKey = getGmtMinus3DateKey();
+  if (nextDateKey === currentGmtMinus3DateKey) {
+    return;
+  }
+
+  currentGmtMinus3DateKey = nextDateKey;
+  dateInput.value = nextDateKey;
+  if (activeUser) {
+    await renderApp();
+  } else {
+    renderWeekStrip();
+  }
+}
+
+function startGmtMinus3DateWatcher() {
+  currentGmtMinus3DateKey = getGmtMinus3DateKey();
+  if (gmtMinus3Timer) {
+    clearInterval(gmtMinus3Timer);
+  }
+
+  gmtMinus3Timer = setInterval(syncSelectedDateToGmtMinus3Today, 30000);
+}
+
 function subscribeToReservationChanges() {
   if (reservationsChannel || !supabaseClient) {
     return;
@@ -572,8 +593,9 @@ function subscribeToReservationChanges() {
 }
 
 async function boot() {
-  dateInput.value = formatDateKey(new Date());
+  dateInput.value = getGmtMinus3DateKey();
   dateInput.required = true;
+  startGmtMinus3DateWatcher();
   supabaseClient = createSupabaseClient();
 
   signInTab.addEventListener("click", () => setAuthMode("signin"));
@@ -584,7 +606,7 @@ async function boot() {
   prevDayButton.addEventListener("click", () => shiftSelectedDate(-1));
   nextDayButton.addEventListener("click", () => shiftSelectedDate(1));
   todayButton.addEventListener("click", async () => {
-    dateInput.value = formatDateKey(new Date());
+    dateInput.value = getGmtMinus3DateKey();
     await renderApp();
   });
   newReservationButton.addEventListener("click", () => openReservationDialog());
