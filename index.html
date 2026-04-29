@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reserva de VM</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="auth-screen" id="authScreen">
+      <section class="auth-panel compact-login" aria-labelledby="authTitle">
+        <div class="brand-block">
+          <img class="brand-logo" src="assets/coopersystem-logo.png" alt="Coopersystem" />
+          <h1 id="authTitle">Reserva de VM</h1>
+        </div>
+
+        <div class="tab-list" role="tablist" aria-label="Modo de autenticação">
+          <button class="tab is-active" id="signInTab" type="button">Entrar</button>
+          <button class="tab" id="createAccountTab" type="button">Criar conta</button>
+        </div>
+
+        <form class="auth-form" id="authForm" autocomplete="on">
+          <label>
+            Usuário
+            <input id="usernameInput" name="username" type="text" minlength="3" maxlength="24" autocomplete="username" required />
+          </label>
+
+          <label>
+            Senha
+            <input id="passwordInput" name="password" type="password" minlength="6" autocomplete="current-password" required />
+          </label>
+
+          <p class="form-message" id="authMessage" aria-live="polite"></p>
+          <button class="primary-action" id="authSubmit" type="submit">Entrar</button>
+        </form>
+      </section>
+    </main>
+
+    <main class="app-shell is-hidden" id="appShell">
+      <header class="topbar">
+        <div class="topbar-title">
+          <img class="topbar-logo" src="assets/coopersystem-logo.png" alt="Coopersystem" />
+          <div>
+            <p class="eyebrow">Reservas de VM</p>
+            <h1>Calendário de reservas</h1>
+          </div>
+        </div>
+
+        <div class="account-chip">
+          <span id="signedInUser"></span>
+          <button class="ghost-button" id="logoutButton" type="button">Sair</button>
+        </div>
+      </header>
+
+      <section class="scheduler" aria-label="Agenda de reservas">
+        <div class="scheduler-toolbar">
+          <div class="date-control">
+            <button class="icon-button" id="prevDayButton" type="button" aria-label="Dia anterior">&lt;</button>
+            <label>
+              Data
+              <input id="dateInput" type="date" />
+            </label>
+            <button class="icon-button" id="nextDayButton" type="button" aria-label="Próximo dia">&gt;</button>
+            <button class="secondary-action" id="todayButton" type="button">Hoje</button>
+          </div>
+          <button class="primary-action compact" id="newReservationButton" type="button">Reservar VM</button>
+        </div>
+
+        <div class="week-strip" id="weekStrip" aria-label="Visão da semana"></div>
+
+        <div class="calendar-wrap">
+          <div class="calendar-grid" id="calendarGrid" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+
+    <dialog class="reservation-dialog" id="reservationDialog">
+      <form method="dialog" class="dialog-card" id="reservationForm">
+        <header>
+          <p class="eyebrow">Nova reserva</p>
+          <h2 id="dialogTitle">Reservar VM</h2>
+        </header>
+
+        <label>
+          Máquina virtual
+          <select id="vmSelect" required></select>
+        </label>
+
+        <label>
+          Horário
+          <select id="hourSelect" required></select>
+        </label>
+
+        <label>
+          Observações
+          <textarea id="reservationNote" rows="3" maxlength="140" placeholder="Projeto ou finalidade opcional"></textarea>
+        </label>
+
+        <p class="form-message" id="reservationMessage" aria-live="polite"></p>
+        <div class="dialog-actions">
+          <button class="ghost-button" id="cancelDialogButton" type="button">Cancelar</button>
+          <button class="primary-action" type="submit">Reservar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
