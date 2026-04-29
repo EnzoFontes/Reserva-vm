@@ -116,6 +116,24 @@ function showMessage(element, message, isSuccess = false) {
   element.classList.toggle("success", isSuccess);
 }
 
+function formatAuthError(message) {
+  const normalizedMessage = message.toLowerCase();
+
+  if (normalizedMessage.includes("email not confirmed")) {
+    return "A confirmação de e-mail está ativada no Supabase. Como o app usa usuário simples, desative em Authentication > Providers > Email > Confirm email.";
+  }
+
+  if (normalizedMessage.includes("invalid login credentials")) {
+    return "Usuário ou senha inválidos.";
+  }
+
+  if (normalizedMessage.includes("user already registered") || normalizedMessage.includes("already registered")) {
+    return "Esse usuário já existe. Use Entrar ou escolha outro usuário.";
+  }
+
+  return message;
+}
+
 function getDisplayName(user) {
   return emailToUsername(user?.email);
 }
@@ -162,7 +180,7 @@ async function handleAuthSubmit(event) {
       const { data, error } = await supabaseClient.auth.signUp({ email, password });
 
       if (error) {
-        showMessage(authMessage, error.message);
+        showMessage(authMessage, formatAuthError(error.message));
         return;
       }
 
@@ -174,12 +192,11 @@ async function handleAuthSubmit(event) {
           await startSession(loginData.user);
           return;
         }
+        setAuthMode("signin");
         showMessage(
           authMessage,
           "Conta criada, mas confirmação de e-mail está ativada no Supabase. Desative em Authentication → Providers → Email → Confirm email.",
-          true,
         );
-        setAuthMode("signin");
         return;
       }
 
@@ -190,7 +207,7 @@ async function handleAuthSubmit(event) {
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
     if (error) {
-      showMessage(authMessage, error.message);
+      showMessage(authMessage, formatAuthError(error.message));
       return;
     }
 
