@@ -224,7 +224,10 @@ function renderWeekStrip() {
     button.type = "button";
     button.className = "week-day";
     button.classList.toggle("is-selected", dateKey === dateInput.value);
-    button.innerHTML = `<strong>${DAY_NAMES[date.getDay()]}</strong>${date.getMonth() + 1}/${date.getDate()}`;
+    const dayName = document.createElement("strong");
+    dayName.textContent = DAY_NAMES[date.getDay()];
+    const dayDate = document.createTextNode(`${date.getMonth() + 1}/${date.getDate()}`);
+    button.append(dayName, dayDate);
     button.addEventListener("click", async () => {
       dateInput.value = dateKey;
       await renderApp();
@@ -274,7 +277,11 @@ async function renderCalendar() {
     HOURS.forEach((hour) => {
       const timeCell = document.createElement("div");
       timeCell.className = "calendar-cell time-cell";
-      timeCell.innerHTML = `<strong>${label}</strong><span>${formatSlotRange(hour)}</span>`;
+      const dayLabel = document.createElement("strong");
+      dayLabel.textContent = label;
+      const timeLabel = document.createElement("span");
+      timeLabel.textContent = formatSlotRange(hour);
+      timeCell.append(dayLabel, timeLabel);
       calendarGrid.append(timeCell);
 
       const reservation = weekReservations.find((item) => item.hour === hour && item.date === dateKey);
@@ -312,7 +319,7 @@ function createSlotCell(dateKey, hour, reservation) {
     const displayUser = reservation.user_email?.split("@")[0] ?? "usuário";
     button.classList.add("is-booked");
     button.classList.toggle("is-own", isOwn);
-    button.innerHTML = "";
+    button.replaceChildren();
     const title = document.createElement("span");
     title.textContent = isOwn ? "Sua reserva" : "Reservado";
     const meta = document.createElement("span");
