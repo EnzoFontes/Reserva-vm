@@ -154,7 +154,18 @@ async function handleAuthSubmit(event) {
       }
 
       if (!data.session) {
-        showMessage(authMessage, "Conta criada. Aguarde a liberação antes de entrar.", true);
+        // Email confirmation is required but @reserva.local addresses can't receive emails.
+        // Try signing in immediately — works if auto-confirm is on, gives clear error otherwise.
+        const { data: loginData, error: loginError } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (!loginError && loginData.session) {
+          await startSession(loginData.user);
+          return;
+        }
+        showMessage(
+          authMessage,
+          "Conta criada, mas confirmação de e-mail está ativada no Supabase. Desative em Authentication → Providers → Email → Confirm email.",
+          true,
+        );
         setAuthMode("signin");
         return;
       }
