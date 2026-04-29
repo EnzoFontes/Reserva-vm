@@ -12,9 +12,10 @@ Open `index.html` in a browser, create a username and password, then reserve ava
 - Passwords are salted and hashed with the browser Web Crypto API before storage when available
 - Day calendar from `08:00-09:00` through `19:00-20:00`
 - Six default VMs: `VM-01` through `VM-06`
-- Prevents double-booking a VM time slot
+- Reserve one hour, multiple hours, or the whole day from `08:00` to `20:00`
+- Prevents double-booking any VM time slot in the selected range
 - Prevents one user from reserving more than one VM in the same hour
-- Users can cancel their own reservations
+- Users can cancel their own reservation blocks
 
 ## Storage
 

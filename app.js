@@ -30,7 +30,9 @@ const reservationDialog = document.querySelector("#reservationDialog");
 const reservationForm = document.querySelector("#reservationForm");
 const reservationMessage = document.querySelector("#reservationMessage");
 const vmSelect = document.querySelector("#vmSelect");
-const hourSelect = document.querySelector("#hourSelect");
+const startHourSelect = document.querySelector("#startHourSelect");
+const endHourSelect = document.querySelector("#endHourSelect");
+const fullDayCheckbox = document.querySelector("#fullDayCheckbox");
 const reservationNote = document.querySelector("#reservationNote");
 const cancelDialogButton = document.querySelector("#cancelDialogButton");
 
@@ -271,7 +273,7 @@ function createSlotCell(vm, hour, reservation) {
     button.setAttribute("aria-label", `${vm} ${formatSlotRange(hour)} reservado por ${reservation.username}`);
 
     if (isOwn) {
-      button.title = "Clique para cancelar";
+      button.title = "Clique para cancelar esta reserva";
       button.addEventListener("click", () => cancelReservation(reservation.id));
     }
   }
@@ -289,13 +291,15 @@ function fillReservationOptions() {
     vmSelect.append(option);
   });
 
-  hourSelect.replaceChildren();
+  startHourSelect.replaceChildren();
   HOURS.forEach((hour) => {
     const option = document.createElement("option");
     option.value = String(hour);
     option.textContent = formatSlotRange(hour);
-    hourSelect.append(option);
+    startHourSelect.append(option);
   });
+
+  updateEndHourOptions();
 }
 
 function openReservationDialog(vm = VIRTUAL_MACHINES[0], hour = HOURS[0]) {
@@ -303,43 +307,100 @@ function openReservationDialog(vm = VIRTUAL_MACHINES[0], hour = HOURS[0]) {
   reservationMessage.textContent = "";
   reservationMessage.classList.remove("success");
   reservationNote.value = "";
+  fullDayCheckbox.checked = false;
   vmSelect.value = vm;
-  hourSelect.value = String(hour);
+  startHourSelect.value = String(hour);
+  updateEndHourOptions(hour + 1);
+  setTimeFieldsEnabled(true);
   reservationDialog.showModal();
+}
+
+function updateEndHourOptions(preferredEndHour) {
+  const startHour = Number(startHourSelect.value || HOURS[0]);
+  const selectedEndHour = preferredEndHour ?? Number(endHourSelect.value || startHour + 1);
+  endHourSelect.replaceChildren();
+
+  for (let hour = startHour + 1; hour <= 20; hour += 1) {
+    const option = document.createElement("option");
+    option.value = String(hour);
+    option.textContent = formatHour(hour);
+    endHourSelect.append(option);
+  }
+
+  endHourSelect.value = String(Math.max(startHour + 1, selectedEndHour));
+}
+
+function setTimeFieldsEnabled(isEnabled) {
+  startHourSelect.disabled = !isEnabled;
+  endHourSelect.disabled = !isEnabled;
+}
+
+function getSelectedHours() {
+  if (fullDayCheckbox.checked) {
+    return HOURS;
+  }
+
+  const startHour = Number(startHourSelect.value);
+  const endHour = Number(endHourSelect.value);
+  return HOURS.filter((hour) => hour >= startHour && hour < endHour);
 }
 
 function handleReservationSubmit(event) {
   event.preventDefault();
   const reservations = readJson(STORAGE_KEYS.reservations, []);
   const vm = vmSelect.value;
-  const hour = Number(hourSelect.value);
   const note = reservationNote.value.trim();
   const date = dateInput.value;
+  const selectedHours = getSelectedHours();
 
-  if (reservations.some((reservation) => reservation.date === date && reservation.vm === vm && reservation.hour === hour)) {
-    showMessage(reservationMessage, "Essa VM já está reservada nesse horário.");
+  if (selectedHours.length === 0) {
+    showMessage(reservationMessage, "Selecione pelo menos um horário.");
+    return;
+  }
+
+  const busyHours = selectedHours.filter((hour) =>
+    reservations.some((reservation) => reservation.date === date && reservation.vm === vm && reservation.hour === hour),
+  );
+
+  if (busyHours.length > 0) {
+    showMessage(reservationMessage, `Essa VM já está reservada em: ${busyHours.map(formatHour).join(", ")}.`);
     renderCalendar();
     return;
   }
 
-  if (reservations.some((reservation) => reservation.date === date && reservation.hour === hour && reservation.username === activeUser)) {
-    showMessage(reservationMessage, "Você já tem uma VM reservada nesse horário.");
+  const userBusyHours = selectedHours.filter((hour) =>
+    reservations.some((reservation) => reservation.date === date && reservation.hour === hour && reservation.username === activeUser),
+  );
+
+  if (userBusyHours.length > 0) {
+    showMessage(reservationMessage, `Você já tem reserva em: ${userBusyHours.map(formatHour).join(", ")}.`);
     return;
   }
 
-  reservations.push({
-    id: crypto.randomUUID(),
-    date,
-    hour,
-    vm,
-    username: activeUser,
-    note,
-    createdAt: new Date().toISOString(),
+  const groupId = crypto.randomUUID();
+  selectedHours.forEach((hour) => {
+    reservations.push({
+      id: crypto.randomUUID(),
+      groupId,
+      date,
+      hour,
+      vm,
+      username: activeUser,
+      note,
+      createdAt: new Date().toISOString(),
+    });
   });
 
   writeJson(STORAGE_KEYS.reservations, reservations);
   reservationDialog.close();
   renderCalendar();
+}
+
+function getReservationGroupIds(reservation) {
+  return {
+    groupId: reservation.groupId ?? reservation.id,
+    id: reservation.id,
+  };
 }
 
 function cancelReservation(reservationId) {
@@ -349,14 +410,16 @@ function cancelReservation(reservationId) {
     return;
   }
 
-  const shouldCancel = confirm("Cancelar esta reserva?");
+  const { groupId } = getReservationGroupIds(reservation);
+  const groupReservations = reservations.filter((item) => (item.groupId ?? item.id) === groupId);
+  const shouldCancel = confirm(`Cancelar esta reserva de ${groupReservations.length} horário(s)?`);
   if (!shouldCancel) {
     return;
   }
 
   writeJson(
     STORAGE_KEYS.reservations,
-    reservations.filter((item) => item.id !== reservationId),
+    reservations.filter((item) => (item.groupId ?? item.id) !== groupId),
   );
   renderCalendar();
 }
@@ -386,6 +449,10 @@ function boot() {
     renderApp();
   });
   newReservationButton.addEventListener("click", () => openReservationDialog());
+  startHourSelect.addEventListener("change", () => updateEndHourOptions());
+  fullDayCheckbox.addEventListener("change", () => {
+    setTimeFieldsEnabled(!fullDayCheckbox.checked);
+  });
   reservationForm.addEventListener("submit", handleReservationSubmit);
   cancelDialogButton.addEventListener("click", () => reservationDialog.close());
 
