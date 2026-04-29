@@ -123,7 +123,7 @@ async function handleAuthSubmit(event) {
   event.preventDefault();
 
   if (!supabaseClient) {
-    showMessage(authMessage, "Configure o Supabase em supabase-config.js antes de entrar.");
+    showMessage(authMessage, "Configure o Supabase antes de entrar.");
     return;
   }
 
@@ -551,7 +551,7 @@ async function boot() {
   cancelDialogButton.addEventListener("click", () => reservationDialog.close());
 
   if (!supabaseClient) {
-    showAuthScreen("Configure o Supabase em supabase-config.js para ativar login e reservas compartilhadas.");
+    showAuthScreen("Configure o Supabase para ativar login e reservas compartilhadas.");
     return;
   }
 

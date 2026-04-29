@@ -1,18 +1,35 @@
 (function bootstrapApp() {
-  const configScript = document.createElement("script");
-  const appScript = document.createElement("script");
-
-  appScript.src = "app.js";
-  appScript.defer = true;
-
-  configScript.src = location.protocol === "file:" ? "supabase-config.js" : "/api/config.js";
-  configScript.onload = function loadApp() {
+  function loadApp() {
+    const appScript = document.createElement("script");
+    appScript.src = "app.js";
+    appScript.defer = true;
     document.body.appendChild(appScript);
-  };
-  configScript.onerror = function loadAppWithoutConfig() {
-    window.RESERVA_VM_SUPABASE = window.RESERVA_VM_SUPABASE || {};
-    document.body.appendChild(appScript);
-  };
+  }
 
-  document.body.appendChild(configScript);
+  if (location.protocol === "file:") {
+    const configScript = document.createElement("script");
+    configScript.src = "supabase-config.js";
+    configScript.onload = loadApp;
+    configScript.onerror = function loadAppWithoutConfig() {
+      window.RESERVA_VM_SUPABASE = window.RESERVA_VM_SUPABASE || {};
+      loadApp();
+    };
+    document.body.appendChild(configScript);
+    return;
+  }
+
+  fetch("/api/config", { cache: "no-store" })
+    .then(function parseConfig(response) {
+      if (!response.ok) {
+        throw new Error("Configuração não encontrada.");
+      }
+      return response.json();
+    })
+    .then(function setConfig(config) {
+      window.RESERVA_VM_SUPABASE = config;
+    })
+    .catch(function useEmptyConfig() {
+      window.RESERVA_VM_SUPABASE = {};
+    })
+    .finally(loadApp);
 })();
