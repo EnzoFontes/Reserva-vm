@@ -83,8 +83,15 @@ function createSupabaseClient() {
     return null;
   }
 
+  const rawUrl = window.RESERVA_VM_SUPABASE.url;
+  const supabaseUrl = rawUrl.startsWith("//")
+    ? `https:${rawUrl}`
+    : rawUrl && !/^https?:\/\//i.test(rawUrl)
+      ? `https://${rawUrl}`
+      : rawUrl;
+
   return window.supabase.createClient(
-    window.RESERVA_VM_SUPABASE.url,
+    supabaseUrl,
     window.RESERVA_VM_SUPABASE.publishableKey,
   );
 }

@@ -1,6 +1,13 @@
 export default function handler(_request, response) {
+  const rawUrl = process.env.SUPABASE_URL || "";
+  const url = rawUrl.startsWith("//")
+    ? `https:${rawUrl}`
+    : rawUrl && !/^https?:\/\//i.test(rawUrl)
+      ? `https://${rawUrl}`
+      : rawUrl;
+
   const config = {
-    url: process.env.SUPABASE_URL || "",
+    url,
     publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || "",
   };
 
