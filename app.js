@@ -29,7 +29,7 @@ const fullDayCheckbox = document.querySelector("#fullDayCheckbox");
 const reservationNote = document.querySelector("#reservationNote");
 const cancelDialogButton = document.querySelector("#cancelDialogButton");
 
-let authMode = "signin";
+let authMode = window.RESERVA_VM_AUTH_MODE || "signin";
 let activeUser = null;
 let supabaseClient = null;
 let reservationsChannel = null;
@@ -91,10 +91,15 @@ function createSupabaseClient() {
 
 function setAuthMode(nextMode) {
   authMode = nextMode;
-  signInTab.classList.toggle("is-active", authMode === "signin");
-  createAccountTab.classList.toggle("is-active", authMode === "create");
-  authSubmit.textContent = authMode === "signin" ? "Entrar" : "Criar conta";
-  passwordInput.autocomplete = authMode === "signin" ? "current-password" : "new-password";
+  if (window.setReservaVmAuthMode) {
+    window.setReservaVmAuthMode(nextMode);
+    return;
+  }
+
+  signInTab.classList.toggle("is-active", nextMode === "signin");
+  createAccountTab.classList.toggle("is-active", nextMode === "create");
+  authSubmit.textContent = nextMode === "signin" ? "Entrar" : "Criar conta";
+  passwordInput.autocomplete = nextMode === "signin" ? "current-password" : "new-password";
   authMessage.textContent = "";
   authMessage.classList.remove("success");
 }
@@ -121,6 +126,7 @@ function showAuthScreen(message) {
 
 async function handleAuthSubmit(event) {
   event.preventDefault();
+  authMode = window.RESERVA_VM_AUTH_MODE || authMode;
 
   if (!supabaseClient) {
     showMessage(authMessage, "Configure o Supabase antes de entrar.");
