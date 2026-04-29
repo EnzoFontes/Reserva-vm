@@ -49,3 +49,25 @@ begin
     alter publication supabase_realtime add table public.reservations;
   end if;
 end $$;
+
+-- Auto-confirm email on signup (app uses @reserva.local fake addresses that cannot receive emails)
+create or replace function public.auto_confirm_email()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update auth.users
+  set email_confirmed_at = now(),
+      updated_at = now()
+  where id = new.id;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created_auto_confirm on auth.users;
+
+create trigger on_auth_user_created_auto_confirm
+  after insert on auth.users
+  for each row execute function public.auto_confirm_email();
