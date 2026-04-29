@@ -26,7 +26,7 @@ This version uses Supabase Auth and a shared `reservations` table.
 1. Create a Supabase project.
 2. In the Supabase SQL Editor, run `supabase-schema.sql`.
 3. For local use, copy `supabase-config.example.js` to `supabase-config.js` and fill in your project URL and publishable/anon key.
-4. In Supabase Auth settings, enable email/password login and turn off email confirmation. This app uses simple usernames internally as `usuario@reserva.local`, so confirmation emails cannot be received.
+4. In Supabase Auth settings, enable the Email provider/password login and turn off email confirmation. The app still shows only username and password; internally it maps usernames to `usuario@reserva.local` because Supabase Auth requires the Email provider for password login.
 5. In Vercel, set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` as environment variables.
 
 If you already created the older multi-VM table, run `supabase-single-vm-migration.sql` once in the Supabase SQL Editor. If the old table has multiple reservations at the same date/hour across different VMs, remove the duplicates before adding the new single-VM unique rule.

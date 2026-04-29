@@ -123,6 +123,10 @@ function formatAuthError(message) {
     return "A confirmação de e-mail está ativada no Supabase. Como o app usa usuário simples, desative em Authentication > Providers > Email > Confirm email.";
   }
 
+  if (normalizedMessage.includes("email logins are disabled")) {
+    return "O login por senha está desativado no Supabase. Ative Authentication > Providers > Email. O app continuará mostrando só Usuário e Senha.";
+  }
+
   if (normalizedMessage.includes("invalid login credentials")) {
     return "Usuário ou senha inválidos.";
   }
