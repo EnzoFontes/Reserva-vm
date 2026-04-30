@@ -36,6 +36,10 @@ let reservationsChannel = null;
 let reservationDate = null;
 let currentGmtMinus3DateKey = null;
 let gmtMinus3Timer = null;
+let calendarRenderId = 0;
+let calendarAbortController = null;
+
+const RESERVATIONS_QUERY_TIMEOUT_MS = 10000;
 
 function cleanUsername(username) {
   return username.trim().toLowerCase();
@@ -302,12 +306,13 @@ function renderWeekStrip() {
   });
 }
 
-async function fetchSelectedDayReservations() {
+async function fetchSelectedDayReservations(dateKey, signal) {
   const { data, error } = await supabaseClient
     .from("reservations")
     .select("id,reservation_group_id,vm,date,hour,user_id,user_email,note,created_at")
-    .eq("date", dateInput.value)
-    .order("hour", { ascending: true });
+    .eq("date", dateKey)
+    .order("hour", { ascending: true })
+    .abortSignal(signal);
 
   if (error) {
     throw error;
@@ -317,16 +322,40 @@ async function fetchSelectedDayReservations() {
 }
 
 async function renderCalendar() {
+  const renderId = calendarRenderId + 1;
+  calendarRenderId = renderId;
+  const selectedDate = dateInput.value;
+
+  if (calendarAbortController) {
+    calendarAbortController.abort();
+  }
+
+  const abortController = new AbortController();
+  calendarAbortController = abortController;
+  const timeoutId = setTimeout(() => {
+    abortController.abort();
+  }, RESERVATIONS_QUERY_TIMEOUT_MS);
+
   calendarGrid.style.gridTemplateColumns = "220px minmax(240px, 1fr)";
   calendarGrid.replaceChildren();
   calendarGrid.append(createHeaderCell("Carregando..."));
 
   let dayReservations = [];
   try {
-    dayReservations = await fetchSelectedDayReservations();
+    dayReservations = await fetchSelectedDayReservations(selectedDate, abortController.signal);
   } catch (error) {
+    if (renderId !== calendarRenderId) {
+      return;
+    }
+
     calendarGrid.replaceChildren();
-    calendarGrid.append(createErrorCell(error.message));
+    calendarGrid.append(createErrorCell(formatCalendarError(error)));
+    return;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (renderId !== calendarRenderId) {
     return;
   }
 
@@ -341,7 +370,7 @@ async function renderCalendar() {
     calendarGrid.append(timeCell);
 
     const reservation = dayReservations.find((item) => item.hour === hour);
-    calendarGrid.append(createSlotCell(dateInput.value, hour, reservation));
+    calendarGrid.append(createSlotCell(selectedDate, hour, reservation));
   });
 }
 
@@ -357,6 +386,21 @@ function createErrorCell(message) {
   cell.className = "calendar-cell error-cell";
   cell.textContent = `Erro ao carregar reservas: ${message}`;
   return cell;
+}
+
+function formatCalendarError(error) {
+  const message = error?.message || String(error);
+  const normalizedMessage = message.toLowerCase();
+
+  if (error?.name === "AbortError" || normalizedMessage.includes("aborted")) {
+    return "a consulta demorou demais. Verifique a conexão e tente atualizar o dia.";
+  }
+
+  if (normalizedMessage.includes("failed to fetch") || normalizedMessage.includes("network")) {
+    return "falha de rede ao falar com o Supabase. Verifique a conexão e tente novamente.";
+  }
+
+  return message;
 }
 
 function createSlotCell(dateKey, hour, reservation) {
