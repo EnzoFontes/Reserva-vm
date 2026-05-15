@@ -131,6 +131,10 @@ function showMessage(element, message, isSuccess = false) {
 function formatAuthError(message) {
   const normalizedMessage = message.toLowerCase();
 
+  if (normalizedMessage.includes("failed to fetch") || normalizedMessage.includes("network")) {
+    return "Falha ao conectar no Supabase. Verifique se SUPABASE_URL na Vercel está exatamente igual à Project URL do Supabase.";
+  }
+
   if (normalizedMessage.includes("email not confirmed")) {
     return "A confirmação de e-mail está ativada no Supabase. Como o app usa usuário simples, desative em Authentication > Providers > Email > Confirm email.";
   }
@@ -228,6 +232,8 @@ async function handleAuthSubmit(event) {
     }
 
     await startSession(data.user);
+  } catch (error) {
+    showMessage(authMessage, formatAuthError(error?.message || String(error)));
   } finally {
     authSubmit.disabled = false;
     authSubmit.textContent = authMode === "signin" ? "Entrar" : "Criar conta";
@@ -397,7 +403,7 @@ function formatCalendarError(error) {
   }
 
   if (normalizedMessage.includes("failed to fetch") || normalizedMessage.includes("network")) {
-    return "falha de rede ao falar com o Supabase. Verifique a conexão e tente novamente.";
+    return "falha de rede ao falar com o Supabase. Verifique se SUPABASE_URL na Vercel está exatamente igual à Project URL do Supabase.";
   }
 
   return message;
